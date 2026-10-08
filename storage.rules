@@ -1,0 +1,29 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // User Profile Images
+    match /profile-images/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Exchange Resources
+    match /resources/{exchangeId}/{fileName} {
+      // Must be authenticated to download and upload exchange documents
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 25 * 1024 * 1024
+                   && (
+                     request.resource.contentType.matches('application/pdf') ||
+                     request.resource.contentType.matches('application/zip') ||
+                     request.resource.contentType.matches('application/msword') ||
+                     request.resource.contentType.matches('application/vnd.openxmlformats-officedocument.*') ||
+                     request.resource.contentType.matches('image/.*') ||
+                     request.resource.contentType.matches('text/.*')
+                   );
+    }
+  }
+}
